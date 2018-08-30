@@ -19,7 +19,8 @@ public class WebSocketConfig extends AbstractWebSocketMessageBrokerConfigurer {
 		stompEndpointRegistry.addEndpoint("/im").addInterceptors(new HandshakeInterceptor()).withSockJS();
 	}
 
-	// Configure the use of message broker	@Override
+	// Configure the use of message broker
+	@Override
 	public void configureMessageBroker(MessageBrokerRegistry registry) {
 		// Unified configuration of the message broker, the message broker is the subscription point,
 		//and the client accepts the message by subscribing to the message proxy point
