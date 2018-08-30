@@ -13,10 +13,10 @@ public class HandshakeInterceptor extends HttpSessionHandshakeInterceptor {
 	private static Logger logger = LoggerFactory.getLogger("xlui");
 
 	/**
-	 * WebSocket 握手前
-	 * <p>
-	 * 可以设置数据到 attributes 中，并在 WebSocketHandler 的 session 中获取
-	 */
+	* Before WebSocket handshake
+	* 
+	* You can set the data to attributes and get it in the session of WebSocketHandler
+	*/
 	@Override
 	public boolean beforeHandshake(ServerHttpRequest request, ServerHttpResponse response, WebSocketHandler wsHandler, Map<String, Object> attributes) throws Exception {
 		logger.info("HandshakeInterceptor: beforeHandshake");
@@ -24,7 +24,7 @@ public class HandshakeInterceptor extends HttpSessionHandshakeInterceptor {
 		return super.beforeHandshake(request, response, wsHandler, attributes);
 	}
 
-	// WebSocket 握手后
+	// After the WebSocket handshake
 	@Override
 	public void afterHandshake(ServerHttpRequest request, ServerHttpResponse response, WebSocketHandler wsHandler, Exception ex) {
 		logger.info("HandshakeInterceptor: afterHandshake");

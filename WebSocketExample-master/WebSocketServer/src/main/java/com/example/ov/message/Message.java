@@ -1,8 +1,8 @@
 package com.example.ov.message;
 
 /**
- * 浏览器向服务端发送的消息应该用此类接受
- */
+  * Messages sent by the browser to the server should be accepted by this class.
+  */
 public class Message {
     private String name;
 

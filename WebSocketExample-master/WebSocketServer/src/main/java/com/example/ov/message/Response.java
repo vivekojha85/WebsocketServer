@@ -1,8 +1,8 @@
 package com.example.ov.message;
 
 /**
- * 服务器向客户端发送此类消息
- */
+  * The server sends such a message to the client
+  */
 public class Response {
     private String response;
 

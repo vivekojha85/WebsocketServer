@@ -7,25 +7,25 @@ import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBr
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 
 @Configuration
-// 启用 Websocket 的消息代理
+//Enable Websocket's message broker
 @EnableWebSocketMessageBroker
 public class WebSocketConfig extends AbstractWebSocketMessageBrokerConfigurer {
-	// 注册 STOMP 协议的节点（Endpoint），并映射为指定的 URL
-	// 我们使用 STOMP，所以不需要再实现 WebSocketHandler。
-	// 实现 WebSocketHandler 的目的是接收和处理消息，STOMP 已经为我们做了这些。
+	// Register the node of the STOMP protocol (Endpoint) and map it to the specified URL
+	// We use STOMP, so there is no need to implement WebSocketHandler.
+	// The purpose of implementing WebSocketHandler is to receive and process messages, and STOMP has done this for us.
 	@Override
 	public void registerStompEndpoints(StompEndpointRegistry stompEndpointRegistry) {
-		// 注册 STOMP 协议的节点，并指定使用 SockJS 协议
+		// Register the node of the STOMP protocol and specify the SockJS protocol
 		stompEndpointRegistry.addEndpoint("/im").addInterceptors(new HandshakeInterceptor()).withSockJS();
 	}
 
-	// 配置使用消息代理
-	@Override
+	// Configure the use of message broker	@Override
 	public void configureMessageBroker(MessageBrokerRegistry registry) {
-		// 统一配置消息代理，消息代理即订阅点，客户端通过订阅消息代理点接受消息
+		// Unified configuration of the message broker, the message broker is the subscription point,
+		//and the client accepts the message by subscribing to the message proxy point
 		registry.enableSimpleBroker("/b", "/g", "/user");
 
-		// 配置点对点消息的前缀
+		// Configure the prefix of the peer-to-peer message
 		registry.setUserDestinationPrefix("/user");
 	}
 }
