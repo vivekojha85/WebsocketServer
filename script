@@ -1,144 +1,112 @@
-# PowerShell Script for Detailed Source Code Analysis
-# Save as analyze-source-detailed.ps1
+# Technology Stack (JDK 17)
 
-$sourceDir = "C:\path\to\your\source\code" # CHANGE THIS PATH
-$outputFile = "detailed-migration-analysis.txt"
+## Core Platform
+- JDK 17 (LTS)
+- Apache Tomcat 10.1.x (Full Jakarta EE 9+ support)
+- Spring Framework 6.x
+- Spring Boot 3.x (specifically designed for JDK 17+)
 
-function Write-Section {
-    param($title)
-    Write-Host "`n=== $title ===" -ForegroundColor Yellow
-    Add-Content -Path $outputFile -Value "`n=== $title ==="
-}
+## Web Framework
+- Spring MVC 6.x
+- Jakarta EE 9+ (replacing javax.* packages)
+- Thymeleaf 3.1.x (optional JSP replacement)
+- Bootstrap 5.x
+- jQuery 3.x (if needed)
 
-function Write-Finding {
-    param($message)
-    Write-Host $message
-    Add-Content -Path $outputFile -Value $message
-}
+## Security
+- Spring Security 6.x
+- JWT Authentication
+- OAuth2 Client 6.x
+- Spring Authorization Server
 
-# Clear or create the output file
-"Migration Analysis Report - $(Get-Date)" | Out-File -FilePath $outputFile
+## Database Access
+- Spring Data JPA 3.x
+- Hibernate 6.x
+- Tomcat JDBC Pool (jakarta namespace)
+- Sybase JDBC driver (verified for JDK 17)
 
-# 1. Detailed TLD Analysis
-Write-Section "TLD Analysis"
-$tldFiles = Get-ChildItem -Path $sourceDir -Filter "*.tld" -Recurse -File
-Write-Finding "Found $($tldFiles.Count) TLD files"
+## Modern Features (JDK 17 Specific)
+- Record classes for DTOs
+- Pattern Matching for instanceof
+- Sealed Classes
+- Text Blocks
+- Switch Expressions
 
-foreach ($tld in $tldFiles) {
-    Write-Finding "`nAnalyzing TLD: $($tld.Name)"
-    $content = Get-Content $tld.FullName
-    
-    # Count custom tags
-    $tagCount = ($content | Select-String "<tag>" -AllMatches).Matches.Count
-    Write-Finding "  - Custom tags: $tagCount"
-    
-    # Extract tag names
-    $tagNames = $content | Select-String "<name>(.*?)</name>" | ForEach-Object { $_.Matches.Groups[1].Value }
-    Write-Finding "  - Tag names: $($tagNames -join ', ')"
-}
+## Testing
+- JUnit Jupiter 5.9.x
+- Mockito 5.x
+- TestContainers
+- Spring Test 6.x
 
-# 2. JSP Analysis
-Write-Section "JSP Analysis"
-$jspFiles = Get-ChildItem -Path $sourceDir -Filter "*.jsp" -Recurse -File
-Write-Finding "Found $($jspFiles.Count) JSP files"
+## Build Tools
+- Maven 3.9.x (with JDK 17 support)
+- Gradle 8.x
+- Node.js 18+ (for frontend builds)
 
-$jspStats = @{
-    TaglibCount = 0
-    FormCount = 0
-    JstlCount = 0
-    CustomTagCount = 0
-    SpringTagCount = 0
-}
+## Monitoring & Observability
+- Micrometer 1.11.x
+- Spring Boot Actuator 3.x
+- SLF4J 2.x
+- Logback 1.4.x
 
-$uniqueTaglibs = @{}
+## Additional Libraries
+- Jackson 2.15.x
+- MapStruct 1.5.x (with JDK 17 support)
+- Validation API (Jakarta)
+- springdoc-openapi 2.x
 
-foreach ($jsp in $jspFiles) {
-    $content = Get-Content $jsp.FullName
-    
-    # Analyze taglib usage
-    $taglibs = $content | Select-String "<%@ taglib.*?uri=['""]([^'""]+)['""]" -AllMatches
-    foreach ($taglib in $taglibs.Matches) {
-        $uri = $taglib.Groups[1].Value
-        if (-not $uniqueTaglibs.ContainsKey($uri)) {
-            $uniqueTaglibs[$uri] = 0
-        }
-        $uniqueTaglibs[$uri]++
-    }
-    
-    # Count forms
-    $formTags = ($content | Select-String "<form" -AllMatches).Matches.Count
-    $jspStats.FormCount += $formTags
-    
-    # Count JSTL usage
-    $jstlTags = ($content | Select-String "<c:|<fmt:" -AllMatches).Matches.Count
-    $jspStats.JstlCount += $jstlTags
-    
-    # Count Spring form tags
-    $springTags = ($content | Select-String "<form:.*?>" -AllMatches).Matches.Count
-    $jspStats.SpringTagCount += $springTags
-}
+## Development Tools
+- Git
+- SonarQube 9.x+
+- JaCoCo 0.8.9+ (with Java 17 support)
+- Checkstyle 10.x
 
-Write-Finding "`nJSP Statistics:"
-Write-Finding "  - Forms found: $($jspStats.FormCount)"
-Write-Finding "  - JSTL tags used: $($jspStats.JstlCount)"
-Write-Finding "  - Spring form tags: $($jspStats.SpringTagCount)"
+## API Documentation
+- SpringDoc OpenAPI 2.x
+- Swagger UI 4.x
 
-Write-Finding "`nUnique Taglib URIs used:"
-foreach ($uri in $uniqueTaglibs.Keys) {
-    Write-Finding "  - $uri (Used in $($uniqueTaglibs[$uri]) files)"
-}
+## Performance
+- Caffeine 3.x
+- Redis Stack
+- HAProxy/Nginx (for load balancing)
 
-# 3. Java Code Analysis
-Write-Section "Java Code Analysis"
-$javaFiles = Get-ChildItem -Path $sourceDir -Filter "*.java" -Recurse -File
+## Key Version Compatibilities
+```xml
+<properties>
+    <java.version>17</java.version>
+    <spring-boot.version>3.1.x</spring-boot.version>
+    <spring-framework.version>6.0.x</spring-framework.version>
+    <spring-security.version>6.1.x</spring-security.version>
+    <jakarta.servlet-api.version>6.0.0</jakarta.servlet-api.version>
+    <hibernate.version>6.2.x</hibernate.version>
+    <jackson.version>2.15.x</jackson.version>
+</properties>
+```
 
-$codeStats = @{
-    EjbCount = 0
-    SpringComponentCount = 0
-    TransactionCount = 0
-}
+## Important Migration Notes
+1. javax.* packages are replaced with jakarta.*
+2. Servlet API changes to jakarta.servlet.*
+3. JPA annotations from jakarta.persistence.*
+4. Validation API from jakarta.validation.*
 
-foreach ($file in $javaFiles) {
-    $content = Get-Content $file.FullName
-    
-    # Count EJB annotations
-    if ($content | Select-String "@EJB|@Stateless|@Stateful" -Quiet) {
-        $codeStats.EjbCount++
-        Write-Finding "EJB found in: $($file.Name)"
-        
-        # Check transaction management
-        $txAnnotations = ($content | Select-String "@TransactionAttribute|@TransactionManagement" -AllMatches).Matches.Count
-        $codeStats.TransactionCount += $txAnnotations
-    }
-    
-    # Count Spring components
-    if ($content | Select-String "@Controller|@Service|@Repository|@Component" -Quiet) {
-        $codeStats.SpringComponentCount++
-    }
-}
+## Recommended Maven Dependencies
+```xml
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-web</artifactId>
+    <version>${spring-boot.version}</version>
+</dependency>
 
-Write-Finding "`nJava Code Statistics:"
-Write-Finding "  - EJB Components: $($codeStats.EjbCount)"
-Write-Finding "  - Transaction annotations: $($codeStats.TransactionCount)"
-Write-Finding "  - Spring Components: $($codeStats.SpringComponentCount)"
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-security</artifactId>
+    <version>${spring-boot.version}</version>
+</dependency>
 
-# 4. Configuration Analysis
-Write-Section "Configuration Analysis"
-$configFiles = Get-ChildItem -Path $sourceDir -Include "web.xml","*-config.xml","*.properties" -Recurse -File
-
-foreach ($config in $configFiles) {
-    Write-Finding "`nAnalyzing config: $($config.Name)"
-    $content = Get-Content $config.FullName
-    
-    # Look for database configurations
-    if ($content | Select-String "jdbc:|dataSource|connection-url" -Quiet) {
-        Write-Finding "  - Contains database configuration"
-    }
-    
-    # Look for security configurations
-    if ($content | Select-String "<security-constraint>|<login-config>|<security-role>" -Quiet) {
-        Write-Finding "  - Contains security configuration"
-    }
-}
-
-Write-Host "`nAnalysis complete! Check $outputFile for detailed report." -ForegroundColor Green
+<dependency>
+    <groupId>jakarta.servlet</groupId>
+    <artifactId>jakarta.servlet-api</artifactId>
+    <version>${jakarta.servlet-api.version}</version>
+    <scope>provided</scope>
+</dependency>
+```
