@@ -1,0 +1,53 @@
+# PowerShell Script for Source Code Analysis
+# Save as analyze-source.ps1
+
+# Set your source code directory
+$sourceDir = "C:\path\to\your\source\code" # CHANGE THIS PATH
+$outputFile = "source-analysis-report.txt"
+
+Write-Host "Analyzing source code in: $sourceDir" -ForegroundColor Green
+
+# Create simple report sections
+function Write-Section {
+    param($title)
+    Write-Host "`n$title" -ForegroundColor Yellow
+}
+
+# 1. Find TLD files
+Write-Section "Finding TLD Files"
+$tldFiles = Get-ChildItem -Path $sourceDir -Filter "*.tld" -Recurse -File
+Write-Host "Found $($tldFiles.Count) TLD files:"
+$tldFiles | ForEach-Object { Write-Host " - $($_.FullName)" }
+
+# 2. Find EJB classes
+Write-Section "Finding EJB Classes"
+$ejbFiles = Get-ChildItem -Path $sourceDir -Filter "*.java" -Recurse -File | 
+    Where-Object { Get-Content $_.FullName | Select-String -Pattern "@EJB|@Stateless|@Stateful" -Quiet }
+Write-Host "Found $($ejbFiles.Count) EJB related files:"
+$ejbFiles | ForEach-Object { Write-Host " - $($_.Name)" }
+
+# 3. Find configuration files
+Write-Section "Finding Configuration Files"
+$configFiles = Get-ChildItem -Path $sourceDir -Include "web.xml","standalone*.xml","*-config.xml" -Recurse -File
+Write-Host "Found $($configFiles.Count) configuration files:"
+$configFiles | ForEach-Object { Write-Host " - $($_.FullName)" }
+
+# 4. Find JSP files
+Write-Section "Finding JSP Files"
+$jspFiles = Get-ChildItem -Path $sourceDir -Filter "*.jsp" -Recurse -File
+Write-Host "Found $($jspFiles.Count) JSP files"
+
+# Generate simple summary
+$summary = @"
+Source Code Analysis Summary:
+----------------------------
+TLD Files: $($tldFiles.Count)
+EJB Classes: $($ejbFiles.Count)
+Config Files: $($configFiles.Count)
+JSP Files: $($jspFiles.Count)
+"@
+
+Write-Host "`n$summary"
+$summary | Out-File -FilePath $outputFile
+
+Write-Host "`nAnalysis complete! Results saved to $outputFile" -ForegroundColor Green
