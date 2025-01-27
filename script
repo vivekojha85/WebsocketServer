@@ -1,53 +1,144 @@
-# PowerShell Script for Source Code Analysis
-# Save as analyze-source.ps1
+# PowerShell Script for Detailed Source Code Analysis
+# Save as analyze-source-detailed.ps1
 
-# Set your source code directory
 $sourceDir = "C:\path\to\your\source\code" # CHANGE THIS PATH
-$outputFile = "source-analysis-report.txt"
+$outputFile = "detailed-migration-analysis.txt"
 
-Write-Host "Analyzing source code in: $sourceDir" -ForegroundColor Green
-
-# Create simple report sections
 function Write-Section {
     param($title)
-    Write-Host "`n$title" -ForegroundColor Yellow
+    Write-Host "`n=== $title ===" -ForegroundColor Yellow
+    Add-Content -Path $outputFile -Value "`n=== $title ==="
 }
 
-# 1. Find TLD files
-Write-Section "Finding TLD Files"
+function Write-Finding {
+    param($message)
+    Write-Host $message
+    Add-Content -Path $outputFile -Value $message
+}
+
+# Clear or create the output file
+"Migration Analysis Report - $(Get-Date)" | Out-File -FilePath $outputFile
+
+# 1. Detailed TLD Analysis
+Write-Section "TLD Analysis"
 $tldFiles = Get-ChildItem -Path $sourceDir -Filter "*.tld" -Recurse -File
-Write-Host "Found $($tldFiles.Count) TLD files:"
-$tldFiles | ForEach-Object { Write-Host " - $($_.FullName)" }
+Write-Finding "Found $($tldFiles.Count) TLD files"
 
-# 2. Find EJB classes
-Write-Section "Finding EJB Classes"
-$ejbFiles = Get-ChildItem -Path $sourceDir -Filter "*.java" -Recurse -File | 
-    Where-Object { Get-Content $_.FullName | Select-String -Pattern "@EJB|@Stateless|@Stateful" -Quiet }
-Write-Host "Found $($ejbFiles.Count) EJB related files:"
-$ejbFiles | ForEach-Object { Write-Host " - $($_.Name)" }
+foreach ($tld in $tldFiles) {
+    Write-Finding "`nAnalyzing TLD: $($tld.Name)"
+    $content = Get-Content $tld.FullName
+    
+    # Count custom tags
+    $tagCount = ($content | Select-String "<tag>" -AllMatches).Matches.Count
+    Write-Finding "  - Custom tags: $tagCount"
+    
+    # Extract tag names
+    $tagNames = $content | Select-String "<name>(.*?)</name>" | ForEach-Object { $_.Matches.Groups[1].Value }
+    Write-Finding "  - Tag names: $($tagNames -join ', ')"
+}
 
-# 3. Find configuration files
-Write-Section "Finding Configuration Files"
-$configFiles = Get-ChildItem -Path $sourceDir -Include "web.xml","standalone*.xml","*-config.xml" -Recurse -File
-Write-Host "Found $($configFiles.Count) configuration files:"
-$configFiles | ForEach-Object { Write-Host " - $($_.FullName)" }
-
-# 4. Find JSP files
-Write-Section "Finding JSP Files"
+# 2. JSP Analysis
+Write-Section "JSP Analysis"
 $jspFiles = Get-ChildItem -Path $sourceDir -Filter "*.jsp" -Recurse -File
-Write-Host "Found $($jspFiles.Count) JSP files"
+Write-Finding "Found $($jspFiles.Count) JSP files"
 
-# Generate simple summary
-$summary = @"
-Source Code Analysis Summary:
-----------------------------
-TLD Files: $($tldFiles.Count)
-EJB Classes: $($ejbFiles.Count)
-Config Files: $($configFiles.Count)
-JSP Files: $($jspFiles.Count)
-"@
+$jspStats = @{
+    TaglibCount = 0
+    FormCount = 0
+    JstlCount = 0
+    CustomTagCount = 0
+    SpringTagCount = 0
+}
 
-Write-Host "`n$summary"
-$summary | Out-File -FilePath $outputFile
+$uniqueTaglibs = @{}
 
-Write-Host "`nAnalysis complete! Results saved to $outputFile" -ForegroundColor Green
+foreach ($jsp in $jspFiles) {
+    $content = Get-Content $jsp.FullName
+    
+    # Analyze taglib usage
+    $taglibs = $content | Select-String "<%@ taglib.*?uri=['""]([^'""]+)['""]" -AllMatches
+    foreach ($taglib in $taglibs.Matches) {
+        $uri = $taglib.Groups[1].Value
+        if (-not $uniqueTaglibs.ContainsKey($uri)) {
+            $uniqueTaglibs[$uri] = 0
+        }
+        $uniqueTaglibs[$uri]++
+    }
+    
+    # Count forms
+    $formTags = ($content | Select-String "<form" -AllMatches).Matches.Count
+    $jspStats.FormCount += $formTags
+    
+    # Count JSTL usage
+    $jstlTags = ($content | Select-String "<c:|<fmt:" -AllMatches).Matches.Count
+    $jspStats.JstlCount += $jstlTags
+    
+    # Count Spring form tags
+    $springTags = ($content | Select-String "<form:.*?>" -AllMatches).Matches.Count
+    $jspStats.SpringTagCount += $springTags
+}
+
+Write-Finding "`nJSP Statistics:"
+Write-Finding "  - Forms found: $($jspStats.FormCount)"
+Write-Finding "  - JSTL tags used: $($jspStats.JstlCount)"
+Write-Finding "  - Spring form tags: $($jspStats.SpringTagCount)"
+
+Write-Finding "`nUnique Taglib URIs used:"
+foreach ($uri in $uniqueTaglibs.Keys) {
+    Write-Finding "  - $uri (Used in $($uniqueTaglibs[$uri]) files)"
+}
+
+# 3. Java Code Analysis
+Write-Section "Java Code Analysis"
+$javaFiles = Get-ChildItem -Path $sourceDir -Filter "*.java" -Recurse -File
+
+$codeStats = @{
+    EjbCount = 0
+    SpringComponentCount = 0
+    TransactionCount = 0
+}
+
+foreach ($file in $javaFiles) {
+    $content = Get-Content $file.FullName
+    
+    # Count EJB annotations
+    if ($content | Select-String "@EJB|@Stateless|@Stateful" -Quiet) {
+        $codeStats.EjbCount++
+        Write-Finding "EJB found in: $($file.Name)"
+        
+        # Check transaction management
+        $txAnnotations = ($content | Select-String "@TransactionAttribute|@TransactionManagement" -AllMatches).Matches.Count
+        $codeStats.TransactionCount += $txAnnotations
+    }
+    
+    # Count Spring components
+    if ($content | Select-String "@Controller|@Service|@Repository|@Component" -Quiet) {
+        $codeStats.SpringComponentCount++
+    }
+}
+
+Write-Finding "`nJava Code Statistics:"
+Write-Finding "  - EJB Components: $($codeStats.EjbCount)"
+Write-Finding "  - Transaction annotations: $($codeStats.TransactionCount)"
+Write-Finding "  - Spring Components: $($codeStats.SpringComponentCount)"
+
+# 4. Configuration Analysis
+Write-Section "Configuration Analysis"
+$configFiles = Get-ChildItem -Path $sourceDir -Include "web.xml","*-config.xml","*.properties" -Recurse -File
+
+foreach ($config in $configFiles) {
+    Write-Finding "`nAnalyzing config: $($config.Name)"
+    $content = Get-Content $config.FullName
+    
+    # Look for database configurations
+    if ($content | Select-String "jdbc:|dataSource|connection-url" -Quiet) {
+        Write-Finding "  - Contains database configuration"
+    }
+    
+    # Look for security configurations
+    if ($content | Select-String "<security-constraint>|<login-config>|<security-role>" -Quiet) {
+        Write-Finding "  - Contains security configuration"
+    }
+}
+
+Write-Host "`nAnalysis complete! Check $outputFile for detailed report." -ForegroundColor Green
